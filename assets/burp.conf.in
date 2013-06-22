@@ -1,0 +1,32 @@
+mode=client
+port=@port@
+server=@server@
+password=@password@
+cname=@cname@
+pidfile=@appdir@/burp.client.pid
+syslog=0
+stdout=1
+progress_counter=1
+ratelimit=@ratelimit@
+network_timeout=@network_timeout@
+@autoupgrade_comment_out@autoupgrade_dir= @appdir@/autoupgrade
+@autoupgrade_comment_out@autoupgrade_os=android_@arch@
+server_can_restore=0
+cross_filesystem=@external_storage@
+cross_all_filesystems=1
+ca_burp_ca=@appdir@/burp_ca
+ca_csr_dir=@appdir@/CA-client
+ssl_cert_ca=@appdir@/ssl_cert_ca.pem
+ssl_cert=@appdir@/ssl_cert-client.pem
+ssl_key=@appdir@/ssl_cert-client.key
+ssl_key_password=@ssl_key_password@
+ssl_peer_cn=@ssl_peer_cn@
+exclude_fs=sysfs
+exclude_fs=tmpfs
+min_file_size=@min_file_size@ Mb
+max_file_size=@max_file_size@ Mb
+nobackup=.nobackup
+exclude_comp=bz2
+exclude_comp=gz
+@includes@
+@excludes@

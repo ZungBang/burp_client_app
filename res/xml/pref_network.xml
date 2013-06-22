@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <EditTextPreference 
+        android:key="cname" 
+        android:title="@string/pref_title_cname" 
+        android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="android"/>
+    
+    <EditTextPreference 
+        android:key="server" 
+        android:title="@string/pref_title_server"
+   		android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="burpserver"/>
+     
+    <EditTextPreference 
+        android:key="port" 
+        android:title="@string/pref_title_port"
+        android:inputType="number"
+   		android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="4971"/>
+    
+    <EditTextPreference 
+        android:key="password" 
+        android:title="@string/pref_title_password"
+   		android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="password"
+        android:password="true"/>
+
+    <EditTextPreference 
+        android:key="ratelimit" 
+        android:title="@string/pref_title_ratelimit"
+        android:inputType="numberDecimal"
+   		android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="1.5"/>
+
+    <EditTextPreference 
+        android:key="network_timeout" 
+        android:title="@string/pref_title_network_timeout"
+        android:inputType="number"
+   		android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="7200"/>
+
+    <EditTextPreference 
+        android:key="ssl_peer_cn" 
+        android:title="@string/pref_title_ssl_peer_cn"
+   		android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="burpserver"/>
+    
+    <EditTextPreference 
+        android:key="ssl_key_password" 
+        android:title="@string/pref_title_ssl_key_password"
+   		android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="password"
+        android:password="true"/>
+
+    <CheckBoxPreference
+        android:defaultValue="false"
+        android:key="autoupgrade_comment_out"
+        android:title="@string/pref_title_autoupgrade" />
+
+</PreferenceScreen>

@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    
+    <EditTextPreference 
+        android:key="min_file_size" 
+        android:title="@string/pref_title_min_file_size"
+        android:inputType="numberDecimal"
+   		android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="0"/>
+    
+    <EditTextPreference 
+        android:key="max_file_size" 
+        android:title="@string/pref_title_max_file_size"
+        android:inputType="numberDecimal"
+   		android:maxLines="1"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="0"/>
+    
+</PreferenceScreen>

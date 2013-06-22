@@ -1,7 +1,8 @@
 #! /system/bin/sh
 
-# FIXME: do not hard code burp_dir - set it in the environment from the app
-burp_dir=/data/data/com.machine_cycle.burp_client_app/files
+burp_dir=@appdir@
+ca_client_dir=${burp_dir}/CA-client
+mkdir ${burp_dir}/CA-client
 export OPENSSL_CONF="${burp_dir}/openssl.conf"
 tmpconf="${burp_dir}/CA-client/tmp.conf"
 keypath="$3"
