@@ -203,7 +203,15 @@ public class MainActivity extends Activity {
 		Log.d(TAG, "Selected architecture: \"" + arch + "\"");
 
 		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
-
+		
+		if (!settings.getBoolean(PreferenceManager.KEY_HAS_SET_DEFAULT_VALUES, false)) {
+			PreferenceManager.setDefaultValues(this, R.xml.pref_general, true);
+			PreferenceManager.setDefaultValues(this, R.xml.pref_connection, true);
+			PreferenceManager.setDefaultValues(this, R.xml.pref_backup, true);
+			PreferenceManager.setDefaultValues(this, R.xml.pref_restore, true);
+			PreferenceManager.setDefaultValues(this, R.xml.pref_advanced, true);
+		}
+		
 		SharedPreferences.Editor editor = settings.edit();
 		editor.putString("arch", arch);
 		editor.putString("appdir", getFilesDir().getPath());

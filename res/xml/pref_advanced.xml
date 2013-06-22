@@ -2,22 +2,6 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
     
     <EditTextPreference 
-        android:key="cname" 
-        android:title="@string/pref_title_cname" 
-        android:maxLines="1"
-        android:selectAllOnFocus="true"
-        android:singleLine="true"
-        android:defaultValue="android"/>
-    
-    <EditTextPreference 
-        android:key="server" 
-        android:title="@string/pref_title_server"
-   		android:maxLines="1"
-        android:selectAllOnFocus="true"
-        android:singleLine="true"
-        android:defaultValue="burpserver"/>
-     
-    <EditTextPreference 
         android:key="port" 
         android:title="@string/pref_title_port"
         android:inputType="number"
@@ -26,15 +10,6 @@
         android:singleLine="true"
         android:defaultValue="4971"/>
     
-    <EditTextPreference 
-        android:key="password" 
-        android:title="@string/pref_title_password"
-   		android:maxLines="1"
-        android:selectAllOnFocus="true"
-        android:singleLine="true"
-        android:defaultValue="password"
-        android:password="true"/>
-
     <EditTextPreference 
         android:key="ratelimit" 
         android:title="@string/pref_title_ratelimit"
@@ -71,7 +46,7 @@
         android:password="true"/>
 
     <CheckBoxPreference
-        android:defaultValue="false"
+        android:defaultValue="true"
         android:key="autoupgrade_comment_out"
         android:title="@string/pref_title_autoupgrade" />
 

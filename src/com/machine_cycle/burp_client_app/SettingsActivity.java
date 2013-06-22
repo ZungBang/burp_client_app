@@ -59,23 +59,33 @@ public class SettingsActivity extends PreferenceActivity {
 		addPreferencesFromResource(R.xml.pref_general);
 
 		PreferenceCategory fakeHeader = new PreferenceCategory(this);
-		fakeHeader.setTitle(R.string.pref_header_network);
+		fakeHeader.setTitle(R.string.pref_header_connection);
 		getPreferenceScreen().addPreference(fakeHeader);
-		addPreferencesFromResource(R.xml.pref_network);
+		addPreferencesFromResource(R.xml.pref_connection);
 
 		fakeHeader = new PreferenceCategory(this);
 		fakeHeader.setTitle(R.string.pref_header_backup);
 		getPreferenceScreen().addPreference(fakeHeader);
 		addPreferencesFromResource(R.xml.pref_backup);
 
+		fakeHeader = new PreferenceCategory(this);
+		fakeHeader.setTitle(R.string.pref_header_restore);
+		getPreferenceScreen().addPreference(fakeHeader);
+		addPreferencesFromResource(R.xml.pref_restore);
+
+		fakeHeader = new PreferenceCategory(this);
+		fakeHeader.setTitle(R.string.pref_header_advanced);
+		getPreferenceScreen().addPreference(fakeHeader);
+		addPreferencesFromResource(R.xml.pref_advanced);
+
 		bindPreferenceSummaryToValue(findPreference("server"));
 		bindPreferenceSummaryToValue(findPreference("cname"));
+		bindPreferenceSummaryToValue(findPreference("min_file_size"));
+		bindPreferenceSummaryToValue(findPreference("max_file_size"));		
 		bindPreferenceSummaryToValue(findPreference("port"));
 		bindPreferenceSummaryToValue(findPreference("ratelimit"));
 		bindPreferenceSummaryToValue(findPreference("network_timeout"));
 		bindPreferenceSummaryToValue(findPreference("ssl_peer_cn"));
-		bindPreferenceSummaryToValue(findPreference("min_file_size"));
-		bindPreferenceSummaryToValue(findPreference("max_file_size"));		
 	}
 
 	@Override
@@ -141,17 +151,13 @@ public class SettingsActivity extends PreferenceActivity {
 	}
 
 	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
-	public static class NetworkPreferenceFragment extends PreferenceFragment {
+	public static class ConnectionPreferenceFragment extends PreferenceFragment {
 		@Override
 		public void onCreate(Bundle savedInstanceState) {
 			super.onCreate(savedInstanceState);
-			addPreferencesFromResource(R.xml.pref_network);
+			addPreferencesFromResource(R.xml.pref_connection);
 			bindPreferenceSummaryToValue(findPreference("server"));
 			bindPreferenceSummaryToValue(findPreference("cname"));
-			bindPreferenceSummaryToValue(findPreference("port"));
-			bindPreferenceSummaryToValue(findPreference("ratelimit"));
-			bindPreferenceSummaryToValue(findPreference("network_timeout"));
-			bindPreferenceSummaryToValue(findPreference("ssl_peer_cn"));
 		}
 	}
 
@@ -166,4 +172,25 @@ public class SettingsActivity extends PreferenceActivity {
 		}
 	}
 
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	public static class RestorePreferenceFragment extends PreferenceFragment {
+		@Override
+		public void onCreate(Bundle savedInstanceState) {
+			super.onCreate(savedInstanceState);
+			addPreferencesFromResource(R.xml.pref_restore);
+		}
+	}
+
+	@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+	public static class AdvancedPreferenceFragment extends PreferenceFragment {
+		@Override
+		public void onCreate(Bundle savedInstanceState) {
+			super.onCreate(savedInstanceState);
+			addPreferencesFromResource(R.xml.pref_advanced);
+			bindPreferenceSummaryToValue(findPreference("port"));
+			bindPreferenceSummaryToValue(findPreference("ratelimit"));
+			bindPreferenceSummaryToValue(findPreference("network_timeout"));
+			bindPreferenceSummaryToValue(findPreference("ssl_peer_cn"));
+		}
+	}
 }

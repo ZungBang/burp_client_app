@@ -3,10 +3,16 @@
     <!-- These settings headers are only used on tablets. -->
 
     <header
-        android:fragment="com.machine_cycle.burp_client_app.SettingsActivity$NetworkPreferenceFragment"
-        android:title="@string/pref_header_network" />
+        android:fragment="com.machine_cycle.burp_client_app.SettingsActivity$ConnectionPreferenceFragment"
+        android:title="@string/pref_header_connection" />
     <header
         android:fragment="com.machine_cycle.burp_client_app.SettingsActivity$BackupPreferenceFragment"
         android:title="@string/pref_header_backup" />
+    <header
+        android:fragment="com.machine_cycle.burp_client_app.SettingsActivity$RestorePreferenceFragment"
+        android:title="@string/pref_header_restore" />
+    <header
+        android:fragment="com.machine_cycle.burp_client_app.SettingsActivity$AdvancedPreferenceFragment"
+        android:title="@string/pref_header_advanced" />
 
 </preference-headers>
