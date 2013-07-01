@@ -229,8 +229,12 @@ public class MainActivity extends Activity {
 		thread.start();		;
 	}
 
-	public boolean onClickBackup(View target) {
-		Log.i(TAG, exec(getFilesDir().getPath() + "/burp", "-c", getFilesDir().getPath() + "/burp.conf", "-a", "b"));
+	public boolean onClickView(View target) {
+		switch (target.getId()) {
+		case R.id.button_backup:
+			Log.i(TAG, exec(getFilesDir().getPath() + "/burp", "-c", getFilesDir().getPath() + "/burp.conf", "-a", "b"));
+			break;
+		}
 		return true;
 	}
 	

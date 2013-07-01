@@ -9,12 +9,12 @@
     tools:context=".MainActivity" >
 
     <Button
-        android:id="@+id/btnBackup"
+        android:id="@+id/button_backup"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_centerHorizontal="true"
         android:layout_marginTop="24dp"
-        android:onClick="onClickBackup"
+        android:onClick="onClickView"
         android:text="@string/pref_header_backup"
         android:typeface="monospace" />
 
