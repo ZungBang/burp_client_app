@@ -16,6 +16,7 @@ import android.preference.PreferenceManager;
 import android.app.Activity;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.content.res.AssetManager;
 import android.util.Log;
 import android.content.Intent;
@@ -219,16 +220,20 @@ public class MainActivity extends Activity {
 		editor.putString("includes", "include=" + getFilesDir().getPath());
 		editor.putString("excludes", "");		
 		editor.commit();
-
+		
 		Thread thread = new Thread(new Runnable() {
 			public void run() {
 				extractAllAssets();
-				Log.i(TAG, exec(getFilesDir().getPath() + "/burp", "-c", getFilesDir().getPath() + "/burp.conf", "-a", "b"));
 			}
 		});
 		thread.start();		;
 	}
 
+	public boolean onClickBackup(View target) {
+		Log.i(TAG, exec(getFilesDir().getPath() + "/burp", "-c", getFilesDir().getPath() + "/burp.conf", "-a", "b"));
+		return true;
+	}
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
@@ -253,7 +258,6 @@ public class MainActivity extends Activity {
 
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-		// TODO Auto-generated method stub
 		super.onActivityResult(requestCode, resultCode, data);
 
 		switch (requestCode) {
