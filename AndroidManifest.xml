@@ -32,6 +32,11 @@
                 android:name="android.support.PARENT_ACTIVITY"
                 android:value="android.preference.PreferenceActivity" />
         </activity>
+
+        <service
+            android:name="com.machine_cycle.burp_client_app.BurpIntentService"
+            android:exported="false" >
+        </service>
     </application>
 
 </manifest>
