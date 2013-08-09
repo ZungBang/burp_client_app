@@ -1,8 +1,16 @@
 package com.machine_cycle.burp_client_app;
 
+import java.io.BufferedReader;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+
 import android.app.IntentService;
 import android.content.Intent;
 import android.content.Context;
+import android.util.Log;
 
 /**
  * An {@link IntentService} subclass for handling asynchronous task requests in
@@ -13,6 +21,8 @@ import android.content.Context;
  */
 
 public class BurpIntentService extends IntentService {
+	private static final String TAG = "BurpIntentService";
+	
 	private static final String ACTION_BACKUP = "com.machine_cycle.burp_client_app.action.BACKUP";
 	private static final String ACTION_TIMED_BACKUP = "com.machine_cycle.burp_client_app.action.TIMED_BACKUP";
 	private static final String ACTION_RESTORE = "com.machine_cycle.burp_client_app.action.RESTORE";
@@ -24,6 +34,45 @@ public class BurpIntentService extends IntentService {
 	private static final String EXTRA_PARAM_BACKUP_NUMBER = "com.machine_cycle.burp_client_app.extra.BACKUP_NUMBER";
 	private static final String EXTRA_PARAM_DIRECTORY = "com.machine_cycle.burp_client_app.extra.DIRECTORY";
 	private static final String EXTRA_PARAM_REGEX = "com.machine_cycle.burp_client_app.extra.REGEX";
+
+	public static String exec(String... command) {
+		StringBuffer output = new StringBuffer();
+		Process process = null;
+		try {
+			process = new ProcessBuilder()
+			.command(command)
+			.redirectErrorStream(true)
+			.start();
+			BufferedReader reader = new BufferedReader(
+					new InputStreamReader(process.getInputStream()));
+			int read;
+			char[] buffer = new char[4096];
+			while ((read = reader.read(buffer)) > 0) {
+				output.append(buffer, 0, read);
+			}
+			reader.close();
+			process.waitFor();
+		}
+		catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
+		finally {
+			if (process != null)
+				process.destroy();
+		}
+		return output.toString();
+	}
+	
+	String burp(String filesPath, String... args) {
+		List<String> command = new ArrayList<String>(Arrays.asList(filesPath + "/burp", "-c", filesPath + "/burp.conf"));
+	    command.addAll(Arrays.asList(args));
+	    String output = exec(command.toArray(new String[0]));
+	    Log.d(TAG, output);
+	    return output;
+	}
 
 	/**
 	 * Starts this service to perform action Backup with the given parameters. If
@@ -167,8 +216,7 @@ public class BurpIntentService extends IntentService {
 	 * parameters.
 	 */
 	private void handleActionBackup() {
-		// TODO: Handle action Backup
-		throw new UnsupportedOperationException("Not yet implemented");
+		burp(getFilesDir().getPath(), "-a", "b");
 	}
 
 	/**
@@ -176,8 +224,7 @@ public class BurpIntentService extends IntentService {
 	 * parameters.
 	 */
 	private void handleActionTimedBackup() {
-		// TODO: Handle action Timed Backup
-		throw new UnsupportedOperationException("Not yet implemented");
+		burp(getFilesDir().getPath(), "-a", "t");
 	}
 
 	/**
@@ -221,8 +268,7 @@ public class BurpIntentService extends IntentService {
 	 * parameters.
 	 */
 	private void handleActionEstimate() {
-		// TODO: Handle action Estimate
-		throw new UnsupportedOperationException("Not yet implemented");
+		burp(getFilesDir().getPath(), "-a", "e");
 	}
 
 }

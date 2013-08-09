@@ -1,26 +1,26 @@
 package com.machine_cycle.burp_client_app;
 
-import java.io.IOException;
 import java.io.BufferedReader;
-import java.io.InputStreamReader;
-import java.io.InputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.util.regex.Pattern;
 import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
+import android.app.Activity;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.res.AssetManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.preference.PreferenceManager;
-import android.app.Activity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.content.res.AssetManager;
-import android.util.Log;
-import android.content.Intent;
-import android.content.SharedPreferences;
 
 public class MainActivity extends Activity {
 
@@ -30,36 +30,6 @@ public class MainActivity extends Activity {
 	private String arch = "arm";
 	private String burpVersion = "*unknown*";
 
-	private String exec(String... command) {
-		StringBuffer output = new StringBuffer();
-		Process process = null;
-		try {
-			process = new ProcessBuilder()
-			.command(command)
-			.redirectErrorStream(true)
-			.start();
-			BufferedReader reader = new BufferedReader(
-					new InputStreamReader(process.getInputStream()));
-			int read;
-			char[] buffer = new char[4096];
-			while ((read = reader.read(buffer)) > 0) {
-				output.append(buffer, 0, read);
-			}
-			reader.close();
-			process.waitFor();
-		}
-		catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-		catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
-		finally {
-			if (process != null)
-				process.destroy();
-		}
-		return output.toString();
-	}
 
 	private void createFileFromTemplate(InputStream in, FileOutputStream out) {
 		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
@@ -160,7 +130,7 @@ public class MainActivity extends Activity {
 	private void extractExecutable(String fromPrefix, String toPrefix, String fileName) {
 		String tgtFileName = getAssetTargetFileName(fileName);
 		extractAsset(fromPrefix, toPrefix, fileName);
-		exec("/system/bin/chmod", "744", toPrefix + tgtFileName);
+		BurpIntentService.exec("/system/bin/chmod", "744", toPrefix + tgtFileName);
 	}
 
 
@@ -172,7 +142,7 @@ public class MainActivity extends Activity {
 		extractExecutable("", toPrefix, "burp_ca.in");
 		updateConfig();
 
-		burpVersion = exec(toPrefix + "burp", "-v");
+		burpVersion = BurpIntentService.exec(toPrefix + "burp", "-v");
 		Log.i(TAG, "Using BURP version " + burpVersion);
 	}
 
@@ -232,7 +202,7 @@ public class MainActivity extends Activity {
 	public boolean onClickView(View target) {
 		switch (target.getId()) {
 		case R.id.button_backup:
-			Log.i(TAG, exec(getFilesDir().getPath() + "/burp", "-c", getFilesDir().getPath() + "/burp.conf", "-a", "b"));
+			BurpIntentService.startActionBackup(target.getContext());
 			break;
 		}
 		return true;
