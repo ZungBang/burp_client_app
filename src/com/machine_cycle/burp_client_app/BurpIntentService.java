@@ -30,7 +30,6 @@ import android.util.Log;
 
 public class BurpIntentService extends IntentService {
 	private static final String TAG = "BurpIntentService";
-	public static final String DEFAULT_ARCH = "arm";
 	private static final String ZIP_ME_NOT_EXT = ".zip-me-not.mp3";
 	private static final String TEMPLATE_EXT = ".in";
 	
@@ -47,6 +46,7 @@ public class BurpIntentService extends IntentService {
 	private static final String EXTRA_PARAM_DIRECTORY = "com.machine_cycle.burp_client_app.extra.DIRECTORY";
 	private static final String EXTRA_PARAM_REGEX = "com.machine_cycle.burp_client_app.extra.REGEX";
 	
+	public static final String DEFAULT_ARCH = "arm";
 	public static String burpVersion = "*unknown*";
 
 	public static String exec(String... command) {
