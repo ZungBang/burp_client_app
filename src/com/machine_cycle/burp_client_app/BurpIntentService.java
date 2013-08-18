@@ -1,15 +1,23 @@
 package com.machine_cycle.burp_client_app;
 
 import java.io.BufferedReader;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.OutputStreamWriter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import android.app.IntentService;
-import android.content.Intent;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.res.AssetManager;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 /**
@@ -22,7 +30,11 @@ import android.util.Log;
 
 public class BurpIntentService extends IntentService {
 	private static final String TAG = "BurpIntentService";
+	public static final String DEFAULT_ARCH = "arm";
+	private static final String ZIP_ME_NOT_EXT = ".zip-me-not.mp3";
+	private static final String TEMPLATE_EXT = ".in";
 	
+	private static final String ACTION_INIT = "com.machine_cycle.burp_client_app.action.INIT";	
 	private static final String ACTION_BACKUP = "com.machine_cycle.burp_client_app.action.BACKUP";
 	private static final String ACTION_TIMED_BACKUP = "com.machine_cycle.burp_client_app.action.TIMED_BACKUP";
 	private static final String ACTION_RESTORE = "com.machine_cycle.burp_client_app.action.RESTORE";
@@ -34,6 +46,8 @@ public class BurpIntentService extends IntentService {
 	private static final String EXTRA_PARAM_BACKUP_NUMBER = "com.machine_cycle.burp_client_app.extra.BACKUP_NUMBER";
 	private static final String EXTRA_PARAM_DIRECTORY = "com.machine_cycle.burp_client_app.extra.DIRECTORY";
 	private static final String EXTRA_PARAM_REGEX = "com.machine_cycle.burp_client_app.extra.REGEX";
+	
+	public static String burpVersion = "*unknown*";
 
 	public static String exec(String... command) {
 		StringBuffer output = new StringBuffer();
@@ -66,13 +80,16 @@ public class BurpIntentService extends IntentService {
 		return output.toString();
 	}
 	
-	String burp(String... args) {
-		String filesPath = getFilesDir().getPath();
-		List<String> command = new ArrayList<String>(Arrays.asList(filesPath + "/burp", "-c", filesPath + "/burp.conf"));
-	    command.addAll(Arrays.asList(args));
-	    String output = exec(command.toArray(new String[0]));
-	    Log.d(TAG, output);
-	    return output;
+	/**
+	 * Starts this service to perform action Init with the given parameters. If
+	 * the service is already performing a task this action will be queued.
+	 * 
+	 * @see IntentService
+	 */
+	public static void startActionInit(Context context) {
+		Intent intent = new Intent(context, BurpIntentService.class);
+		intent.setAction(ACTION_INIT);
+		context.startService(intent);
 	}
 
 	/**
@@ -181,11 +198,145 @@ public class BurpIntentService extends IntentService {
 		super("BurpIntentService");
 	}
 
+	private void createFileFromTemplate(InputStream in, FileOutputStream out) {
+		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+		String rline;
+		BufferedReader br = new BufferedReader(new InputStreamReader(in));
+		OutputStreamWriter osw = new OutputStreamWriter(out); 
+		Pattern p = Pattern.compile("@([^@]*)@");
+		try {
+			while ((rline = br.readLine()) != null) {
+				int idx = 0;
+				String wline = "";
+				Matcher m = p.matcher(rline);
+				while (m.find()) {
+					String property = m.group(1);
+					String value;
+					try {
+						value = settings.getString(property, m.group(0));
+					} catch (ClassCastException e) {
+						boolean bValue = settings.getBoolean(property, false);
+						boolean commentOut = property.endsWith("_comment_out");
+						if (bValue) {
+							if (commentOut) {
+								value = "";
+							} else {
+								value = "1";
+							}
+						} else {
+							if (commentOut) {
+								value = "#";
+							} else {
+								value = "0";
+							}
+						}
+					}
+					if (value.startsWith("@")) {
+						Log.w(TAG, "unknown property in template: " + value);
+					}
+					wline = wline + rline.substring(idx, m.start(0));
+					wline = wline + value;
+					idx = m.end(0);
+				}
+				wline = wline + rline.substring(idx);
+				osw.write(wline +"\n");
+			}
+			osw.close();
+		} catch (IOException e) {
+			throw new RuntimeException(e);			
+		}
+	}
+
+	private void extractBinaryAsset(InputStream in, FileOutputStream out) {
+		try {
+			int read;
+			byte[] buffer = new byte[4096];
+			while ((read = in.read(buffer)) > 0) {
+				out.write(buffer, 0, read);
+			}
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}	
+
+	private String getAssetTargetFileName(String fileName) {
+		if (fileName.endsWith(TEMPLATE_EXT)) {
+			return fileName.substring(0, fileName.length() - TEMPLATE_EXT.length());
+		}
+		return fileName;
+	}
+
+	public void extractAsset(String fromPrefix, String toPrefix, String fileName) {
+		String tgtFileName = getAssetTargetFileName(fileName);
+		boolean template = fileName.endsWith(TEMPLATE_EXT);
+		AssetManager assets = getAssets();
+		try {
+			InputStream in;
+			try {
+				in = assets.open(fromPrefix + fileName);
+			}
+			catch (IOException e) {
+				// file not found: maybe this is a large (>1MB) asset that
+				// was renamed with an mp3 extension to prevent it from being compressed
+				// so that it can be opened on android 2.3
+				in = assets.open(fromPrefix + fileName + ZIP_ME_NOT_EXT);
+			}			
+			FileOutputStream out = new FileOutputStream(toPrefix + tgtFileName);
+			if (template) {
+				createFileFromTemplate(in, out);
+			} else {
+				extractBinaryAsset(in, out);
+			}
+			out.close();
+			in.close();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	private void extractExecutable(String fromPrefix, String toPrefix, String fileName) {
+		String tgtFileName = getAssetTargetFileName(fileName);
+		extractAsset(fromPrefix, toPrefix, fileName);
+		exec("/system/bin/chmod", "744", toPrefix + tgtFileName);
+	}
+
+
+	private void updateConfig() {
+		String toPrefix = getFilesDir().getPath() + "/"; 
+		extractAsset("", toPrefix, "burp.conf.in");		
+	}
+	
+	private void extractAllAssets() {
+		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
+		String arch = settings.getString("arch", DEFAULT_ARCH);
+		String fromPrefix = arch + "/";
+		String toPrefix = getFilesDir().getPath() + "/"; 
+		extractExecutable(fromPrefix, toPrefix, "burp");
+		extractExecutable(fromPrefix, toPrefix, "openssl");
+		extractExecutable("", toPrefix, "burp_ca.in");
+		updateConfig();
+
+		burpVersion = exec(toPrefix + "burp", "-v");
+		Log.i(TAG, "Using BURP version " + burpVersion);
+	}
+
+	String burp(String... args) {
+	    updateConfig();
+		String filesPath = getFilesDir().getPath();
+		List<String> command = new ArrayList<String>(Arrays.asList(filesPath + "/burp", "-c", filesPath + "/burp.conf"));
+	    command.addAll(Arrays.asList(args));
+	    String output = exec(command.toArray(new String[0]));
+	    Log.d(TAG, output);
+	    return output;
+	}
+
 	@Override
 	protected void onHandleIntent(Intent intent) {
 		if (intent != null) {
 			final String action = intent.getAction();
-			if (ACTION_BACKUP.equals(action)) {
+			if (ACTION_INIT.equals(action)) {
+				handleActionInit();
+			} else if (ACTION_BACKUP.equals(action)) {
 				handleActionBackup();
 			} else if (ACTION_TIMED_BACKUP.equals(action)) {
 				handleActionTimedBackup();
@@ -210,6 +361,14 @@ public class BurpIntentService extends IntentService {
 				handleActionEstimate();
 			}
 		}
+	}
+
+	/**
+	 * Handle action Init in the provided background thread with the provided
+	 * parameters.
+	 */
+	private void handleActionInit() {
+		extractAllAssets();
 	}
 
 	/**
