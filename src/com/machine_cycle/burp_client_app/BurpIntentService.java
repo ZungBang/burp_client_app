@@ -66,7 +66,8 @@ public class BurpIntentService extends IntentService {
 		return output.toString();
 	}
 	
-	String burp(String filesPath, String... args) {
+	String burp(String... args) {
+		String filesPath = getFilesDir().getPath();
 		List<String> command = new ArrayList<String>(Arrays.asList(filesPath + "/burp", "-c", filesPath + "/burp.conf"));
 	    command.addAll(Arrays.asList(args));
 	    String output = exec(command.toArray(new String[0]));
@@ -216,7 +217,7 @@ public class BurpIntentService extends IntentService {
 	 * parameters.
 	 */
 	private void handleActionBackup() {
-		burp(getFilesDir().getPath(), "-a", "b");
+		burp("-a", "b");
 	}
 
 	/**
@@ -224,7 +225,7 @@ public class BurpIntentService extends IntentService {
 	 * parameters.
 	 */
 	private void handleActionTimedBackup() {
-		burp(getFilesDir().getPath(), "-a", "t");
+		burp("-a", "t");
 	}
 
 	/**
@@ -268,7 +269,7 @@ public class BurpIntentService extends IntentService {
 	 * parameters.
 	 */
 	private void handleActionEstimate() {
-		burp(getFilesDir().getPath(), "-a", "e");
+		burp("-a", "e");
 	}
 
 }
