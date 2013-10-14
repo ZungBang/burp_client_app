@@ -1,13 +1,19 @@
 package com.machine_cycle.burp_client_app;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
+import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Formatter;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -193,18 +199,96 @@ public class BurpIntentService extends IntentService {
 		intent.setAction(ACTION_ESTIMATE);
 		context.startService(intent);
 	}
+	
+	private static String byteArray2Hex(final byte[] hash) {
+	    Formatter formatter = new Formatter();
+	    for (byte b : hash) {
+	        formatter.format("%02x", b);
+	    }
+	    String hex = formatter.toString();
+	    formatter.close();
+	    return hex;
+	}		
 
+	
+	private static String readFileToString(String path) throws IOException {
+		// based on code from 
+		// http://www.journaldev.com/875/java-read-file-to-string-example
+        BufferedReader reader = new BufferedReader(new FileReader(path));
+        String line = null;
+        StringBuilder stringBuilder = new StringBuilder();
+        final String ls = System.getProperty("line.separator");
+        while((line = reader.readLine()) != null) {
+            stringBuilder.append(line);
+            stringBuilder.append(ls);
+        }
+        //delete the last ls
+        stringBuilder.deleteCharAt(stringBuilder.length()-1);
+        reader.close();
+        return stringBuilder.toString();
+    }
+	
+	private static String computeChecksum(String path) {
+		MessageDigest md;
+		try {
+			md = MessageDigest.getInstance("SHA-1");
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			return null;
+		}
+	    FileInputStream fis;
+		try {
+			fis = new FileInputStream(path);
+		} catch (FileNotFoundException e) {
+			return null;
+		}
+		
+		try {
+			byte[] buffer = new byte[1024];	 
+			int nread = 0; 
+			while ((nread = fis.read(buffer)) != -1) {
+				md.update(buffer, 0, nread);
+			}
+			fis.close();
+		} catch (IOException e) {
+			return null;
+		}
+	 
+	    byte[] mdbytes = md.digest();
+	    return byteArray2Hex(mdbytes);
+	}
+	
+	private static boolean isChecksumValid(String path) {
+		String hash = null;
+		try {
+			hash = readFileToString(path + ".sha1sum");
+			Log.d(TAG, hash + " " + path + ".sha1sum");
+		} catch (IOException e) {
+			return false;
+		}
+		String actual_hash = computeChecksum(path);
+		Log.d(TAG, actual_hash + " " + path);
+		return hash.equals(actual_hash);
+	}
+	
+	
 	public BurpIntentService() {
 		super("BurpIntentService");
 	}
 
-	private void createFileFromTemplate(InputStream in, FileOutputStream out) {
+	private void createFileFromTemplate(InputStream in, String tgtPath) {
+		// replace strings in input that look like this @settings_property_name@
+		// with the corresponding settings property value
+		// - string properties are substituted as is, 
+		// - booleans are replaced with a "0"/"1"
+		// - booleans whose property name ends with "_comment_out" are replaced with "#"
+		//   if true or are removed
 		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
 		String rline;
 		BufferedReader br = new BufferedReader(new InputStreamReader(in));
-		OutputStreamWriter osw = new OutputStreamWriter(out); 
 		Pattern p = Pattern.compile("@([^@]*)@");
 		try {
+			OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(tgtPath)); 
 			while ((rline = br.readLine()) != null) {
 				int idx = 0;
 				String wline = "";
@@ -247,13 +331,38 @@ public class BurpIntentService extends IntentService {
 		}
 	}
 
-	private void extractBinaryAsset(InputStream in, FileOutputStream out) {
+	private void extractBinaryAsset(InputStream in, String tgtPath) {
 		try {
-			int read;
-			byte[] buffer = new byte[4096];
-			while ((read = in.read(buffer)) > 0) {
-				out.write(buffer, 0, read);
+			// check if file exists and its checksum is correct
+			if (isChecksumValid(tgtPath)) {
+				Log.d(TAG, "Asset already extracted -- " + tgtPath);
+				return;
 			}
+			// extract file from assets and compute its checksum
+			MessageDigest md;
+			try {
+				md = MessageDigest.getInstance("SHA-1");
+			} catch (NoSuchAlgorithmException e) {
+				e.printStackTrace();
+				return;
+			}
+			FileOutputStream out = new FileOutputStream(tgtPath);
+			int nread;
+			byte[] buffer = new byte[4096];
+			while ((nread = in.read(buffer)) > 0) {
+				md.update(buffer, 0, nread);
+				out.write(buffer, 0, nread);
+			}
+			out.close();
+			// write checksum
+		    byte[] mdbytes = md.digest();
+		    String hash = byteArray2Hex(mdbytes);
+			OutputStreamWriter osw = new OutputStreamWriter(new FileOutputStream(tgtPath + ".sha1sum"));
+			osw.write(hash);
+			osw.close();
+			// check if extraction succeeded
+			if (!isChecksumValid(tgtPath))
+				throw new RuntimeException("Failed to extract " + tgtPath);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -280,14 +389,13 @@ public class BurpIntentService extends IntentService {
 				// was renamed with an mp3 extension to prevent it from being compressed
 				// so that it can be opened on android 2.3
 				in = assets.open(fromPrefix + fileName + ZIP_ME_NOT_EXT);
-			}			
-			FileOutputStream out = new FileOutputStream(toPrefix + tgtFileName);
-			if (template) {
-				createFileFromTemplate(in, out);
-			} else {
-				extractBinaryAsset(in, out);
 			}
-			out.close();
+			String tgtPath = toPrefix + tgtFileName;
+			if (template) {
+				createFileFromTemplate(in, tgtPath);
+			} else {
+				extractBinaryAsset(in, tgtPath);
+			}
 			in.close();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -321,7 +429,7 @@ public class BurpIntentService extends IntentService {
 	}
 
 	String burp(String... args) {
-	    updateConfig();
+	    extractAllAssets();
 		String filesPath = getFilesDir().getPath();
 		List<String> command = new ArrayList<String>(Arrays.asList(filesPath + "/burp", "-c", filesPath + "/burp.conf"));
 	    command.addAll(Arrays.asList(args));
