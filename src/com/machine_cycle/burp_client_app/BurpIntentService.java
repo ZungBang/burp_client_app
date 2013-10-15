@@ -282,7 +282,7 @@ public class BurpIntentService extends IntentService {
 		// - string properties are substituted as is, 
 		// - booleans are replaced with a "0"/"1"
 		// - booleans whose property name ends with "_comment_out" are replaced with "#"
-		//   if true or are removed
+		//   if false or are removed
 		SharedPreferences settings = PreferenceManager.getDefaultSharedPreferences(this);
 		String rline;
 		BufferedReader br = new BufferedReader(new InputStreamReader(in));
