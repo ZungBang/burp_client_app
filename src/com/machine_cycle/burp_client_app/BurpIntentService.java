@@ -23,6 +23,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.res.AssetManager;
+import android.os.PowerManager;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
@@ -30,8 +31,6 @@ import android.util.Log;
  * An {@link IntentService} subclass for handling asynchronous task requests in
  * a service on a separate handler thread.
  * <p>
- * TODO: Customize class - update intent actions, extra parameters and static
- * helper methods.
  */
 
 public class BurpIntentService extends IntentService {
@@ -54,6 +53,19 @@ public class BurpIntentService extends IntentService {
 	
 	public static final String DEFAULT_ARCH = "arm";
 	public static String burpVersion = "*unknown*";
+	
+	private static volatile PowerManager.WakeLock wakeLock = null;
+
+	synchronized private static PowerManager.WakeLock getLock(Context context) {
+		if (wakeLock == null) {
+			PowerManager mgr=
+					(PowerManager)context.getSystemService(Context.POWER_SERVICE);
+			wakeLock = mgr.newWakeLock(PowerManager.PARTIAL_WAKE_LOCK,  context.getPackageName());
+			wakeLock.setReferenceCounted(true);
+		}
+		return wakeLock;
+	}
+
 
 	public static String exec(String... command) {
 		StringBuffer output = new StringBuffer();
@@ -93,6 +105,7 @@ public class BurpIntentService extends IntentService {
 	 * @see IntentService
 	 */
 	public static void startActionInit(Context context) {
+		getLock(context.getApplicationContext()).acquire();
 		Intent intent = new Intent(context, BurpIntentService.class);
 		intent.setAction(ACTION_INIT);
 		context.startService(intent);
@@ -105,6 +118,7 @@ public class BurpIntentService extends IntentService {
 	 * @see IntentService
 	 */
 	public static void startActionBackup(Context context) {
+		getLock(context.getApplicationContext()).acquire();
 		Intent intent = new Intent(context, BurpIntentService.class);
 		intent.setAction(ACTION_BACKUP);
 		context.startService(intent);
@@ -116,8 +130,8 @@ public class BurpIntentService extends IntentService {
 	 * 
 	 * @see IntentService
 	 */
-	// TODO: Customize helper method
 	public static void startActionTimedBackup(Context context) {
+		getLock(context.getApplicationContext()).acquire();
 		Intent intent = new Intent(context, BurpIntentService.class);
 		intent.setAction(ACTION_TIMED_BACKUP);
 		context.startService(intent);
@@ -129,9 +143,9 @@ public class BurpIntentService extends IntentService {
 	 * 
 	 * @see IntentService
 	 */
-	// TODO: Customize helper method
 	public static void startActionRestore(Context context, String backup_number,
 			String directory, String regex) {
+		getLock(context.getApplicationContext()).acquire();
 		Intent intent = new Intent(context, BurpIntentService.class);
 		intent.setAction(ACTION_RESTORE);
 		intent.putExtra(EXTRA_PARAM_BACKUP_NUMBER, backup_number);
@@ -146,9 +160,9 @@ public class BurpIntentService extends IntentService {
 	 * 
 	 * @see IntentService
 	 */
-	// TODO: Customize helper method
 	public static void startActionList(Context context, String backup_number,
 			String directory, String regex) {
+		getLock(context.getApplicationContext()).acquire();
 		Intent intent = new Intent(context, BurpIntentService.class);
 		intent.setAction(ACTION_LIST);
 		intent.putExtra(EXTRA_PARAM_BACKUP_NUMBER, backup_number);
@@ -163,9 +177,9 @@ public class BurpIntentService extends IntentService {
 	 * 
 	 * @see IntentService
 	 */
-	// TODO: Customize helper method
 	public static void startActionLongList(Context context, String backup_number,
 			String directory, String regex) {
+		getLock(context.getApplicationContext()).acquire();
 		Intent intent = new Intent(context, BurpIntentService.class);
 		intent.setAction(ACTION_LONG_LIST);
 		intent.putExtra(EXTRA_PARAM_BACKUP_NUMBER, backup_number);
@@ -180,8 +194,8 @@ public class BurpIntentService extends IntentService {
 	 * 
 	 * @see IntentService
 	 */
-	// TODO: Customize helper method
 	public static void startActionVerify(Context context) {
+		getLock(context.getApplicationContext()).acquire();
 		Intent intent = new Intent(context, BurpIntentService.class);
 		intent.setAction(ACTION_VERIFY);
 		context.startService(intent);
@@ -193,8 +207,8 @@ public class BurpIntentService extends IntentService {
 	 * 
 	 * @see IntentService
 	 */
-	// TODO: Customize helper method
 	public static void startActionEstimate(Context context) {
+		getLock(context.getApplicationContext()).acquire();
 		Intent intent = new Intent(context, BurpIntentService.class);
 		intent.setAction(ACTION_ESTIMATE);
 		context.startService(intent);
@@ -274,6 +288,7 @@ public class BurpIntentService extends IntentService {
 	
 	public BurpIntentService() {
 		super("BurpIntentService");
+		setIntentRedelivery(true);
 	}
 
 	private void createFileFromTemplate(InputStream in, String tgtPath) {
@@ -439,37 +454,56 @@ public class BurpIntentService extends IntentService {
 	}
 
 	@Override
+	public int onStartCommand(Intent intent, int flags, int startId) {
+		PowerManager.WakeLock lock = getLock(this.getApplicationContext());
+		if (!lock.isHeld() || (flags & START_FLAG_REDELIVERY) != 0) {
+			lock.acquire();
+		}
+		super.onStartCommand(intent, flags, startId);
+		return START_REDELIVER_INTENT;
+	}
+
+	@Override
 	protected void onHandleIntent(Intent intent) {
-		if (intent != null) {
-			final String action = intent.getAction();
-			if (ACTION_INIT.equals(action)) {
-				handleActionInit();
-			} else if (ACTION_BACKUP.equals(action)) {
-				handleActionBackup();
-			} else if (ACTION_TIMED_BACKUP.equals(action)) {
-				handleActionTimedBackup();
-			} else if (ACTION_RESTORE.equals(action)) {
-				final String backup_number = intent.getStringExtra(EXTRA_PARAM_BACKUP_NUMBER);
-				final String directory = intent.getStringExtra(EXTRA_PARAM_DIRECTORY);
-				final String regex = intent.getStringExtra(EXTRA_PARAM_REGEX);
-				handleActionRestore(backup_number, directory, regex);
-			} else if (ACTION_LIST.equals(action)) {
-				final String backup_number = intent.getStringExtra(EXTRA_PARAM_BACKUP_NUMBER);
-				final String directory = intent.getStringExtra(EXTRA_PARAM_DIRECTORY);
-				final String regex = intent.getStringExtra(EXTRA_PARAM_REGEX);
-				handleActionList(backup_number, directory, regex);
-			} else if (ACTION_LONG_LIST.equals(action)) {
-				final String backup_number = intent.getStringExtra(EXTRA_PARAM_BACKUP_NUMBER);
-				final String directory = intent.getStringExtra(EXTRA_PARAM_DIRECTORY);
-				final String regex = intent.getStringExtra(EXTRA_PARAM_REGEX);
-				handleActionLongList(backup_number, directory, regex);
-			} else if (ACTION_VERIFY.equals(action)) {
-				handleActionVerify();
-			} else if (ACTION_ESTIMATE.equals(action)) {
-				handleActionEstimate();
+		try {
+			if (intent != null) {
+				final String action = intent.getAction();
+				if (ACTION_INIT.equals(action)) {
+					handleActionInit();
+				} else if (ACTION_BACKUP.equals(action)) {
+					handleActionBackup();
+				} else if (ACTION_TIMED_BACKUP.equals(action)) {
+					handleActionTimedBackup();
+				} else if (ACTION_RESTORE.equals(action)) {
+					final String backup_number = intent.getStringExtra(EXTRA_PARAM_BACKUP_NUMBER);
+					final String directory = intent.getStringExtra(EXTRA_PARAM_DIRECTORY);
+					final String regex = intent.getStringExtra(EXTRA_PARAM_REGEX);
+					handleActionRestore(backup_number, directory, regex);
+				} else if (ACTION_LIST.equals(action)) {
+					final String backup_number = intent.getStringExtra(EXTRA_PARAM_BACKUP_NUMBER);
+					final String directory = intent.getStringExtra(EXTRA_PARAM_DIRECTORY);
+					final String regex = intent.getStringExtra(EXTRA_PARAM_REGEX);
+					handleActionList(backup_number, directory, regex);
+				} else if (ACTION_LONG_LIST.equals(action)) {
+					final String backup_number = intent.getStringExtra(EXTRA_PARAM_BACKUP_NUMBER);
+					final String directory = intent.getStringExtra(EXTRA_PARAM_DIRECTORY);
+					final String regex = intent.getStringExtra(EXTRA_PARAM_REGEX);
+					handleActionLongList(backup_number, directory, regex);
+				} else if (ACTION_VERIFY.equals(action)) {
+					handleActionVerify();
+				} else if (ACTION_ESTIMATE.equals(action)) {
+					handleActionEstimate();
+				}
 			}
 		}
+		finally {
+			PowerManager.WakeLock lock = getLock(this.getApplicationContext());		        
+			if (lock.isHeld()) {
+				lock.release();
+			}		    
+		}
 	}
+
 
 	/**
 	 * Handle action Init in the provided background thread with the provided
@@ -500,7 +534,6 @@ public class BurpIntentService extends IntentService {
 	 * parameters.
 	 */
 	private void handleActionRestore(String backup_number, String directory, String regex) {
-		// TODO: Handle action Restore
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
@@ -509,7 +542,6 @@ public class BurpIntentService extends IntentService {
 	 * parameters.
 	 */
 	private void handleActionList(String backup_number, String directory, String regex) {
-		// TODO: Handle action List
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
@@ -518,7 +550,6 @@ public class BurpIntentService extends IntentService {
 	 * parameters.
 	 */
 	private void handleActionLongList(String backup_number, String directory, String regex) {
-		// TODO: Handle action Long List
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
@@ -527,7 +558,6 @@ public class BurpIntentService extends IntentService {
 	 * parameters.
 	 */
 	private void handleActionVerify() {
-		// TODO: Handle action Verify
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
 
